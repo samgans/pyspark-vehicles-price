@@ -1,5 +1,3 @@
-from typing import Tuple
-
 from py4j.java_gateway import JavaObject
 from pyspark.sql import DataFrame
 from pyspark.sql.session import SparkSession
@@ -33,9 +31,9 @@ class SparkJVMLogger:
 
 
 def create_session(is_dev: bool) -> SparkSession:
-    session = SparkSession.builder.appName("CarAnalysis")
+    session = SparkSession.builder.appName("CarPriceAnalysis")
     if is_dev:
-        session = session.master("local")
+        session = session.master("local[*]")
     sc = session.getOrCreate()
     return sc
 

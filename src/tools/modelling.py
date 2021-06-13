@@ -1,7 +1,6 @@
-import itertools
 from functools import partial
 from typing import (
-    Any, Dict, Literal, List, Mapping,
+    Any, Dict, Literal, List,
     Sequence, Tuple, Union
 )
 from pyspark.ml.base import _FitMultipleIterator, Estimator, Transformer
@@ -33,25 +32,28 @@ def generate_linreg_parameters(lr: LinearRegression) -> model_params:
 
 
 def generate_gbt_params(gbt: GBTRegressor) -> model_params:
-    depth_vals = [i for i in range(3, 11)]
-    instances_in_node = [i for i in range(30, 75, 5)]
-    return ((gbt.maxDepth, depth_vals), (gbt.minInstancesPerNode, instances_in_node))
+    depth_vals = [5]
+    instances_in_node = [30]
+    return (
+        (gbt.maxDepth, depth_vals),
+        (gbt.minInstancesPerNode, instances_in_node)
+    )
 
 
 def cross_validate_reg(train_set: DataFrame, param_vals: model_params,
                        estimator: Estimator, label_col: str,
                        prediction_col: str = "prediction",
-                       metric_name: str = "r2") -> Transformer:
+                       metric_name: str = "mse") -> Transformer:
     reg_eval = RegressionEvaluator(
         predictionCol=prediction_col,
         labelCol=label_col,
         metricName=metric_name
     )
 
-    grid = ParamGridBuilder()
+    gridbuilder = ParamGridBuilder()
     for values in param_vals:
-        grid = grid.addGrid(values[0], values[1])
-    grid = grid.build()
+        gridbuilder = gridbuilder.addGrid(values[0], values[1])
+    grid = gridbuilder.build()
     crossval = CrossValidator(estimator=estimator, estimatorParamMaps=grid,
                               evaluator=reg_eval, numFolds=3)
     return crossval.fit(train_set)
@@ -68,8 +70,10 @@ def evaluate_regression(predictions: DataFrame, label_col: str, prediction_col: 
     return lr_evaluator.evaluate(predictions)
 
 
-def apply_modelling(train_set: DataFrame, test_set: DataFrame,
-                    label_col: str, features_col: str) -> DataFrame:
+def apply_modelling(dataset: DataFrame, label_col: str,
+                    features_col: str, split: List[float]) \
+                                            -> Tuple[DataFrame, int, int, int]:
+    train_set, test_set = dataset.randomSplit(split)
     model = GBTRegressor(labelCol=label_col, featuresCol=features_col)
     model_params = generate_gbt_params(model)
     cv_best = cross_validate_reg(train_set, model_params,
@@ -82,23 +86,19 @@ def apply_modelling(train_set: DataFrame, test_set: DataFrame,
         label_col=label_col,
         prediction_col="prediction"
     )
-
     best_model = cv_best.bestModel
-    # m_depth = best_model._java_obj.getMaxDepth()
-    # min_inst = best_model._java_obj.getMinInstancesPerNode()
-    elnet_param = best_model._java_obj.getElasticNetParam()
-    reg_param = best_model._java_obj.getRegParam()
 
+    m_depth = best_model._java_obj.getMaxDepth()
+    min_inst = best_model._java_obj.getMinInstancesPerNode()
     r2 = evaluator()
     mse = evaluator(metric_name="mse")
     rmse = evaluator(metric_name="rmse")
 
-    print(f"R2 of the best model: {r2}")
-    print(f"MSE of the best model: {mse}")
-    print(f"RMSE of the best model: {rmse}")
-
-    # print(f"Max depth of the best model: {m_depth}")
-    # print(f"Min instances in node of the best model: {min_inst}")
-    print(f"Reg: {reg_param}")
-    print(f"ElasticNet param: {elnet_param}")
-    return fitted
+    model_metrics = {
+        "r2": r2,
+        "mse": mse,
+        "rmse": rmse,
+        "min_depth": m_depth,
+        "min_instances": min_inst
+    }
+    return (fitted, model_metrics)
