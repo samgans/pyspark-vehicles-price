@@ -2,11 +2,11 @@
 
 ## Description
 
-This repository contains PySpark code that **Extracts** the data on used vehicles prices, **Transforms** it with fully configurable processing pipeline, and creates a predicting **Model** based on the data being processed. The pipeline is a result of my Spark and its Python API study, so it was fully indended to boost the instrument knowledge rather that to create a precise model. Therefore, the quality of the hyperparameters tuning is rather pure, but the system is pretty much configurable, so anyone can create a set of parameters inside the specific functions and feed it to cross validator to find the optimal values.
+This repository contains PySpark code that **Extracts** the data on used vehicles prices, **Transforms** it with fully configurable processing pipeline, and creates a predicting **Model** based on the data being processed. The pipeline is a result of my Spark and its Python API study, so it was fully indended to boost the instrument knowledge rather that to create a precise model. Therefore, the quality of the hyperparameters tuning is rather poor, but the system is pretty much configurable, so anyone can create a set of parameters inside the specific functions and feed it to cross validator to find the optimal values.
 
 The decision to use GBTRegressor on the **Modelling** step instead of Linear Regression is made based on observation that the first model has better prediction results than pure LinReg.
 
-Data source: [Vehicle dataset](https://www.kaggle.com/nehalbirla/vehicle-dataset-from-cardekho?select=Car+details+v3.csv)
+Data source: [Vehicle dataset](https://www.kaggle.com/nehalbirla/vehicle-dataset-from-cardekho?select=Car+details+v3.csv).
 
 ## Usage
 
